@@ -190,9 +190,27 @@ class AirCargoProblem(Problem):
         conditions by ignoring the preconditions required for an action to be
         executed.
         """
-        # TODO implement (see Russell-Norvig Ed-3 10.2.3  or Russell-Norvig Ed-2 11.2)
-        count = 0
+        curr_state = decode_state(node.state,self.state_map)
+
+        remaining_goals = [g for g in self.goal if g not in curr_state.pos]
+        count = self.get_nr_count_until_all_goal_states_reached(1, remaining_goals)
         return count
+
+    def get_nr_count_until_all_goal_states_reached(self, curr_count, remaining_goals):
+        """
+        Counts how many times the actions, regardless their precondition, needs to be applied
+        until all goals have been reached
+        :param curr_count: the number of times actions have been applied before this method has been called
+        :param remaining_goals: a set of all goals that haven't been reached it
+        :return: the number of times all actions had to be applied until all goal states were reached
+        """
+        if len(remaining_goals) == 0:
+            return curr_count
+
+        # remove added fluent from remaining_gaols if executed action reached goal
+        [remaining_goals.remove(a) for actions in self.actions_list for a in actions.effect_add if a in remaining_goals]
+
+        return self.get_nr_count_until_all_goal_states_reached(curr_count+1, remaining_goals)
 
 
 def air_cargo_p1() -> AirCargoProblem:

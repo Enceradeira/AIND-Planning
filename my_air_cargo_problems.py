@@ -48,7 +48,6 @@ class AirCargoProblem(Problem):
             list of Action objects
         """
 
-        # TODO create concrete Action objects based on the domain action schema for: Load, Unload, and Fly
         # concrete actions definition: specific literal action that does not include variables as with the schema
         # for example, the action schema 'Load(c, p, a)' can represent the concrete actions 'Load(C1, P1, SFO)'
         # or 'Load(C2, P2, JFK)'.  The actions for the planning problem must be concrete because the problems in
@@ -87,8 +86,8 @@ class AirCargoProblem(Problem):
                         effect_add = [expr(f"At({c}, {a})")]
                         effect_rem = [expr(f"In({c}, {p})")]
                         unload = Action(expr(f"Unload({c}, {p}, {a})"),
-                                      [precond_pos, precond_neg],
-                                      [effect_add, effect_rem])
+                                        [precond_pos, precond_neg],
+                                        [effect_add, effect_rem])
                         unloads.append(unload)
             return unloads
 
@@ -123,9 +122,16 @@ class AirCargoProblem(Problem):
             e.g. 'FTTTFF'
         :return: list of Action objects
         """
-        # TODO implement
-        possible_actions = []
-        return possible_actions
+
+        decoded_state = decode_state(state, self.state_map)
+
+        def precondition_met(action):
+            all_pos_met = all(map(lambda f: f in decoded_state.pos, action.precond_pos))
+            all_neg_met = all(map(lambda f: f in decoded_state.neg, action.precond_neg))
+            return all_pos_met and all_neg_met
+
+        possible_actions = filter(precondition_met, self.actions_list)
+        return list(possible_actions)
 
     def result(self, state: str, action: Action):
         """ Return the state that results from executing the given

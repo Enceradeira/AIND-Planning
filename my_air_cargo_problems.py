@@ -123,11 +123,11 @@ class AirCargoProblem(Problem):
         :return: list of Action objects
         """
 
-        decoded_state = decode_state(state, self.state_map)
+        curr_state = decode_state(state, self.state_map)
 
         def precondition_met(action):
-            all_pos_met = all(map(lambda f: f in decoded_state.pos, action.precond_pos))
-            all_neg_met = all(map(lambda f: f in decoded_state.neg, action.precond_neg))
+            all_pos_met = all(map(lambda f: f in curr_state.pos, action.precond_pos))
+            all_neg_met = all(map(lambda f: f in curr_state.neg, action.precond_neg))
             return all_pos_met and all_neg_met
 
         possible_actions = filter(precondition_met, self.actions_list)
@@ -142,9 +142,16 @@ class AirCargoProblem(Problem):
         :param action: Action applied
         :return: resulting state after action
         """
-        # TODO implement
-        new_state = FluentState([], [])
-        return encode_state(new_state, self.state_map)
+        curr_state = decode_state(state, self.state_map)
+        added_effect = action.effect_add
+        removed_effect = action.effect_rem
+
+        # add / remove fluents according to the effect of the action
+        next_pos = list(filter(lambda e: e not in removed_effect, curr_state.pos + added_effect))
+        # all fluents that are not positive are negative
+        next_neg = list(filter(lambda e: e not in next_pos, self.state_map))
+
+        return encode_state(FluentState(next_pos, next_neg), self.state_map)
 
     def goal_test(self, state: str) -> bool:
         """ Test the state to see if goal is reached

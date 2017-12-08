@@ -1,8 +1,12 @@
 .DS_Store
 __pycache__
 *.pyc
-*.zip
-*.json
-.idea/
-tests/.cache/v/cache/lastfailed
-.cache/v/cache/lastfailed
+
+*-[0-9]*.zip
+*-result-[0-9]*.json
+
+*.pyproj.user
+.vs
+.idea
+.cache
+

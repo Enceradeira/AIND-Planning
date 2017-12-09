@@ -308,29 +308,18 @@ class PlanningGraph():
         #   action node is added, it MUST be connected to the S node instances in the appropriate s_level set.
 
         parents = self.s_levels[level]
-        parents_neg = list(filter(lambda p: not p.is_pos, parents))
-        parents_pos = list(filter(lambda p: p.is_pos, parents))
+        potential_action_nodes = map(lambda a: PgNode_a(a), self.all_actions)
 
-        def create_node(node_desc):
-            node = PgNode_a(node_desc[1])
-            [node.parents.add(p) for p in node_desc[2]]
-            return node
+        def action_that_meet_prerequisite(action_node):
+            return all(map(lambda n: n in parents, action_node.prenodes))
 
-        def action_to_parent_nodes(action):
-            def filter_parents(action_preconditions, parent_nodes):
-                return list(filter(lambda n: n.symbol in action_preconditions, parent_nodes))
+        def lookup_parent_in_s_level(action_node):
+            return filter(lambda p: p in action_node.prenodes, parents)
 
-            prerequisite_nodes_pos = filter_parents(action.precond_pos, parents_pos)
-            prerequisite_nodes_neg = filter_parents(action.precond_neg, parents_neg)
-            all_met = len(prerequisite_nodes_pos) == len(action.precond_pos) \
-                      and len(prerequisite_nodes_neg) == len(action.precond_neg)
-            return (all_met, action, prerequisite_nodes_pos + prerequisite_nodes_neg)
+        action_nodes = list(filter(action_that_meet_prerequisite, potential_action_nodes))
+        [a.parents.add(p) for a in action_nodes for p in lookup_parent_in_s_level(a)]
+        self.a_levels.append(action_nodes)
 
-        new_nodes_at_level = list(
-            map(create_node, filter(lambda n: n[0], map(action_to_parent_nodes, self.all_actions))))
-
-        # add new action nodes to level
-        self.a_levels.append(new_nodes_at_level)
 
     def add_literal_level(self, level):
         """ add an S (literal) level to the Planning Graph

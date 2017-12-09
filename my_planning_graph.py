@@ -101,7 +101,6 @@ class PgNode_s(PgNode):
 class PgNode_a(PgNode):
     """A-type (action) Planning Graph node - inherited from PgNode """
 
-
     def __init__(self, action: Action):
         """A-level Planning Graph node constructor
 
@@ -299,6 +298,7 @@ class PlanningGraph():
         :return:
             adds A nodes to the current level in self.a_levels[level]
         """
+
         # TODO add action A level to the planning graph as described in the Russell-Norvig text
         # 1. determine what actions to add and create those PgNode_a objects
         # 2. connect the nodes to the previous S literal level
@@ -306,6 +306,31 @@ class PlanningGraph():
         #   set iff all prerequisite literals for the action hold in S0.  This can be accomplished by testing
         #   to see if a proposed PgNode_a has prenodes that are a subset of the previous S level.  Once an
         #   action node is added, it MUST be connected to the S node instances in the appropriate s_level set.
+
+        parents = self.s_levels[level]
+        parents_neg = list(filter(lambda p: not p.is_pos, parents))
+        parents_pos = list(filter(lambda p: p.is_pos, parents))
+
+        def create_node(node_desc):
+            node = PgNode_a(node_desc[1])
+            [node.parents.add(p) for p in node_desc[2]]
+            return node
+
+        def action_to_parent_nodes(action):
+            def filter_parents(action_preconditions, parent_nodes):
+                return list(filter(lambda n: n.symbol in action_preconditions, parent_nodes))
+
+            prerequisite_nodes_pos = filter_parents(action.precond_pos, parents_pos)
+            prerequisite_nodes_neg = filter_parents(action.precond_neg, parents_neg)
+            all_met = len(prerequisite_nodes_pos) == len(action.precond_pos) \
+                      and len(prerequisite_nodes_neg) == len(action.precond_neg)
+            return (all_met, action, prerequisite_nodes_pos + prerequisite_nodes_neg)
+
+        new_nodes_at_level = list(
+            map(create_node, filter(lambda n: n[0], map(action_to_parent_nodes, self.all_actions))))
+
+        # add new action nodes to level
+        self.a_levels.append(new_nodes_at_level)
 
     def add_literal_level(self, level):
         """ add an S (literal) level to the Planning Graph
@@ -344,9 +369,9 @@ class PlanningGraph():
         for i, n1 in enumerate(nodelist[:-1]):
             for n2 in nodelist[i + 1:]:
                 if (self.serialize_actions(n1, n2) or
-                        self.inconsistent_effects_mutex(n1, n2) or
-                        self.interference_mutex(n1, n2) or
-                        self.competing_needs_mutex(n1, n2)):
+                    self.inconsistent_effects_mutex(n1, n2) or
+                    self.interference_mutex(n1, n2) or
+                    self.competing_needs_mutex(n1, n2)):
                     mutexify(n1, n2)
 
     def serialize_actions(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
@@ -386,7 +411,7 @@ class PlanningGraph():
 
     def interference_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         """
-        Test a pair of actions for mutual exclusion, returning True if the 
+        Test a pair of actions for mutual exclusion, returning True if the
         effect of one action is the negation of a precondition of the other.
 
         HINT: The Action instance associated with an action node is accessible

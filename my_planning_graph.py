@@ -2,6 +2,7 @@ from aimacode.planning import Action
 from aimacode.search import Problem
 from aimacode.utils import expr, Expr
 from lp_utils import decode_state
+from itertools import chain, groupby
 
 
 class PgNode():
@@ -299,7 +300,6 @@ class PlanningGraph():
             adds A nodes to the current level in self.a_levels[level]
         """
 
-        # TODO add action A level to the planning graph as described in the Russell-Norvig text
         # 1. determine what actions to add and create those PgNode_a objects
         # 2. connect the nodes to the previous S literal level
         # for example, the A0 level will iterate through all possible actions for the problem and add a PgNode_a to a_levels[0]
@@ -320,7 +320,6 @@ class PlanningGraph():
         [a.parents.add(p) for a in action_nodes for p in lookup_parent_in_s_level(a)]
         self.a_levels.append(action_nodes)
 
-
     def add_literal_level(self, level):
         """ add an S (literal) level to the Planning Graph
 
@@ -330,7 +329,6 @@ class PlanningGraph():
         :return:
             adds S nodes to the current level in self.s_levels[level]
         """
-        # TODO add literal S level to the planning graph as described in the Russell-Norvig text
         # 1. determine what literals to add
         # 2. connect the nodes
         # for example, every A node in the previous level has a list of S nodes in effnodes that represent the effect
@@ -338,6 +336,21 @@ class PlanningGraph():
         #   may be "added" to the set without fear of duplication.  However, it is important to then correctly create and connect
         #   all of the new S nodes as children of all the A nodes that could produce them, and likewise add the A nodes to the
         #   parent sets of the S nodes
+
+        action_nodes = self.a_levels[level - 1]
+
+        effect_nodes = dict()
+        for action_node in action_nodes:
+            for effect_node in action_node.effnodes:
+                effect_nodes[effect_node] = effect_node
+
+        for action_node in action_nodes:
+            for effect_node in action_node.effnodes:
+                uniq_effect_node = effect_nodes[effect_node]
+                action_node.children.add(uniq_effect_node)
+                uniq_effect_node.parents.add(action_node)
+
+        self.s_levels.append(list(effect_nodes.keys()))
 
     def update_a_mutex(self, nodeset):
         """ Determine and update sibling mutual exclusion for A-level nodes

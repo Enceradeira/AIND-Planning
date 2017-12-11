@@ -394,6 +394,18 @@ class PlanningGraph():
             return False
         return True
 
+    def is_cancelling_literals(self, pair):
+        """
+        Returns True in case two literals cancel each other (Same symbol but one negative, the other positive)
+        :param pair: A Tuple of PgNode_s
+        :return: True in case the two literals cancel each other
+        """
+        node_1 = pair[0]
+        node_2 = pair[1]
+        is_same_symbol = node_1.symbol == node_2.symbol
+        is_cancelling = node_1.is_pos != node_2.is_pos
+        return is_same_symbol and is_cancelling
+
     def has_inconsistency(self, nodes1, nodes2):
         """
         Returns true if any Symbol in nodes1 is contained as a negative in nodes2
@@ -401,15 +413,7 @@ class PlanningGraph():
         :param nodes2: List of Nodes of type PgNode_s
         :return: true if any Symbol in nodes1 is contained as a negative in nodes2
         """
-
-        def inconsistent_effect(pair):
-            node_1 = pair[0]
-            node_2 = pair[1]
-            is_same_symbol = node_1.symbol == node_2.symbol
-            is_cancelling = node_1.is_pos != node_2.is_pos
-            return is_same_symbol and is_cancelling
-
-        return any(filter(inconsistent_effect, product(nodes1, nodes2)))
+        return any(filter(self.is_cancelling_literals, product(nodes1, nodes2)))
 
     def inconsistent_effects_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         """
@@ -496,8 +500,7 @@ class PlanningGraph():
         :param node_s2: PgNode_s
         :return: bool
         """
-        # TODO test for negation between nodes
-        return False
+        return self.is_cancelling_literals((node_s1, node_s2))
 
     def inconsistent_support_mutex(self, node_s1: PgNode_s, node_s2: PgNode_s):
         """

@@ -2,7 +2,7 @@ from aimacode.planning import Action
 from aimacode.search import Problem
 from aimacode.utils import expr, Expr
 from lp_utils import decode_state
-from itertools import chain, groupby
+from itertools import product
 
 
 class PgNode():
@@ -408,8 +408,15 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         """
-        # TODO test for Inconsistent Effects between nodes
-        return False
+
+        def inconsistent_effect(pair):
+            effect_1 = pair[0]
+            effect_2 = pair[1]
+            is_same_symbol = effect_1.symbol == effect_2.symbol
+            is_cancelling = effect_1.is_pos != effect_2.is_pos
+            return is_same_symbol and is_cancelling
+
+        return any(filter(inconsistent_effect, product(node_a1.effnodes, node_a2.effnodes)))
 
     def interference_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         """

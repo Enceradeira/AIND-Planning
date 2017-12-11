@@ -454,9 +454,15 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         """
+        def get_parents_mutex_nodes(node):
+            nodes_per_parent = map(lambda n: list(n.mutex), node_a1.parents)
+            nodes = [val for sublist in nodes_per_parent for val in sublist]
+            return nodes
 
-        # TODO test for Competing Needs between nodes
-        return False
+        mutexed_nodes_of_parents_node_a1 = get_parents_mutex_nodes(node_a1)
+        mutexed_nodes_of_parents_node_a2 = get_parents_mutex_nodes(node_a2)
+
+        return any(map(lambda t: t[0] == t[1], product(mutexed_nodes_of_parents_node_a1, mutexed_nodes_of_parents_node_a2)))
 
     def update_s_mutex(self, nodeset: set):
         """ Determine and update sibling mutual exclusion for S-level nodes

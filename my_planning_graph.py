@@ -2,7 +2,7 @@ from aimacode.planning import Action
 from aimacode.search import Problem
 from aimacode.utils import expr, Expr
 from lp_utils import decode_state
-from itertools import product
+from itertools import product, combinations
 
 
 class PgNode():
@@ -394,6 +394,23 @@ class PlanningGraph():
             return False
         return True
 
+    def has_inconsistency(self, nodes1, nodes2):
+        """
+        Returns true if any Symbol in nodes1 is contained as a negative in nodes2
+        :param nodes1:  List of Nodes of type PgNode_s
+        :param nodes2: List of Nodes of type PgNode_s
+        :return: true if any Symbol in nodes1 is contained as a negative in nodes2
+        """
+
+        def inconsistent_effect(pair):
+            node_1 = pair[0]
+            node_2 = pair[1]
+            is_same_symbol = node_1.symbol == node_2.symbol
+            is_cancelling = node_1.is_pos != node_2.is_pos
+            return is_same_symbol and is_cancelling
+
+        return any(filter(inconsistent_effect, product(nodes1, nodes2)))
+
     def inconsistent_effects_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         """
         Test a pair of actions for inconsistent effects, returning True if
@@ -408,15 +425,7 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         """
-
-        def inconsistent_effect(pair):
-            effect_1 = pair[0]
-            effect_2 = pair[1]
-            is_same_symbol = effect_1.symbol == effect_2.symbol
-            is_cancelling = effect_1.is_pos != effect_2.is_pos
-            return is_same_symbol and is_cancelling
-
-        return any(filter(inconsistent_effect, product(node_a1.effnodes, node_a2.effnodes)))
+        return self.has_inconsistency(node_a1.effnodes, node_a2.effnodes)
 
     def interference_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         """
@@ -432,8 +441,8 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         """
-        # TODO test for Interference between nodes
-        return False
+        return self.has_inconsistency(node_a1.prenodes, node_a2.effnodes) or self.has_inconsistency(node_a1.effnodes,
+                                                                                                    node_a2.prenodes)
 
     def competing_needs_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         """

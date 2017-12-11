@@ -458,6 +458,7 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         """
+
         def get_parents_mutex_nodes(node):
             nodes_per_parent = map(lambda n: list(n.mutex), node_a1.parents)
             nodes = [val for sublist in nodes_per_parent for val in sublist]
@@ -466,7 +467,8 @@ class PlanningGraph():
         mutexed_nodes_of_parents_node_a1 = get_parents_mutex_nodes(node_a1)
         mutexed_nodes_of_parents_node_a2 = get_parents_mutex_nodes(node_a2)
 
-        return any(map(lambda t: t[0] == t[1], product(mutexed_nodes_of_parents_node_a1, mutexed_nodes_of_parents_node_a2)))
+        return any(
+            map(lambda t: t[0] == t[1], product(mutexed_nodes_of_parents_node_a1, mutexed_nodes_of_parents_node_a2)))
 
     def update_s_mutex(self, nodeset: set):
         """ Determine and update sibling mutual exclusion for S-level nodes
@@ -518,8 +520,24 @@ class PlanningGraph():
         :param node_s2: PgNode_s
         :return: bool
         """
-        # TODO test for Inconsistent Support between nodes
-        return False
+
+        def is_node_inconsistent(node1, node2):
+            actions1 = node1.parents
+            actions2 = node2.parents
+
+            can_achieve_both_states = any(map(lambda a: node1 in a.children and node2 in a.children, actions1))
+            if can_achieve_both_states:
+                return False
+            all_actions_mutex = all(map(lambda n1: any(map(lambda n2: n1.is_mutex(n2), actions2)), actions1))
+            return all_actions_mutex
+
+        # can_achieve_both_states1 = any(map(lambda a: node_s1 in a.children and node_s2 in a.children,actions1))
+        # result1 = all(map(lambda n1: any(map(lambda n2: n1.is_mutex(n2), actions_node_s2)), actions1))
+
+        # can_achieve_both_states2 = any(map(lambda a: node_s1 in a.children and node_s2 in a.children,actions_node_s2))
+        # result2 = all(map(lambda n1: any(map(lambda n2: n1.is_mutex(n2), actions1)), actions_node_s2))
+
+        return is_node_inconsistent(node_s1, node_s2) and is_node_inconsistent(node_s2, node_s1)
 
     def h_levelsum(self) -> int:
         """The sum of the level costs of the individual goals (admissible if goals independent)

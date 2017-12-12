@@ -350,7 +350,7 @@ class PlanningGraph():
                 action_node.children.add(uniq_effect_node)
                 uniq_effect_node.parents.add(action_node)
 
-        self.s_levels.append(list(effect_nodes.keys()))
+        self.s_levels.append(set(effect_nodes.keys()))
 
     def update_a_mutex(self, nodeset):
         """ Determine and update sibling mutual exclusion for A-level nodes
@@ -544,7 +544,14 @@ class PlanningGraph():
 
         :return: int
         """
-        level_sum = 0
-        # TODO implement
         # for each goal in the problem, determine the level cost, then add them together
-        return level_sum
+
+        def level_cost_of_goal(goal):
+            def matches_goal(s):
+                return s.is_pos and s.symbol == goal
+
+            levels = enumerate(self.s_levels)
+            found_levels = (level for level, nodes_of_level in levels if any(filter(matches_goal, nodes_of_level)))
+            return next(found_levels)
+
+        return sum(map(level_cost_of_goal, self.problem.goal))

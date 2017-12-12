@@ -2,8 +2,6 @@ from aimacode.planning import Action
 from aimacode.search import Problem
 from aimacode.utils import expr, Expr
 from lp_utils import decode_state
-from itertools import product
-
 
 class PgNode():
     """Base class for planning graph nodes.
@@ -413,7 +411,11 @@ class PlanningGraph():
         :param nodes2: List of Nodes of type PgNode_s
         :return: true if any Symbol in nodes1 is contained as a negative in nodes2
         """
-        return any(filter(self.is_cancelling_literals, product(nodes1, nodes2)))
+        for n1 in nodes1:
+            for n2 in nodes2:
+                if self.is_cancelling_literals((n1, n2)):
+                    return True
+        return False
 
     def inconsistent_effects_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         """
@@ -460,15 +462,19 @@ class PlanningGraph():
         """
 
         def get_parents_mutex_nodes(node):
-            nodes_per_parent = map(lambda n: list(n.mutex), node_a1.parents)
-            nodes = [val for sublist in nodes_per_parent for val in sublist]
+            nodes_per_parent = map(lambda n: n.mutex, node_a1.parents)
+            nodes = (val for sublist in nodes_per_parent for val in sublist)
             return nodes
 
         mutexed_nodes_of_parents_node_a1 = get_parents_mutex_nodes(node_a1)
         mutexed_nodes_of_parents_node_a2 = get_parents_mutex_nodes(node_a2)
 
-        return any(
-            map(lambda t: t[0] == t[1], product(mutexed_nodes_of_parents_node_a1, mutexed_nodes_of_parents_node_a2)))
+        for a in mutexed_nodes_of_parents_node_a1:
+            for b in mutexed_nodes_of_parents_node_a2:
+                if a == b:
+                    return True
+
+        return False
 
     def update_s_mutex(self, nodeset: set):
         """ Determine and update sibling mutual exclusion for S-level nodes
@@ -544,6 +550,7 @@ class PlanningGraph():
 
         :return: int
         """
+
         # for each goal in the problem, determine the level cost, then add them together
 
         def level_cost_of_goal(goal):

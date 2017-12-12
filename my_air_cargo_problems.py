@@ -62,11 +62,11 @@ class AirCargoProblem(Problem):
             for c in self.cargos:
                 for p in self.planes:
                     for a in self.airports:
-                        precond_pos = [expr(f"At({c}, {a})"), expr(f"At({p}, {a})")]
+                        precond_pos = [expr("At({}, {})".format(c, a)), expr("At({}, {})".format(p, a))]
                         precond_neg = []
-                        effect_add = [expr(f"In({c}, {p})")]
-                        effect_rem = [expr(f"At({c}, {a})")]
-                        load = Action(expr(f"Load({c}, {p}, {a})"),
+                        effect_add = [expr("In({}, {})".format(c, p))]
+                        effect_rem = [expr("At({}, {})".format(c, a))]
+                        load = Action(expr("Load({}, {}, {})".format(c, p, a)),
                                       [precond_pos, precond_neg],
                                       [effect_add, effect_rem])
                         loads.append(load)
@@ -81,11 +81,11 @@ class AirCargoProblem(Problem):
             for c in self.cargos:
                 for p in self.planes:
                     for a in self.airports:
-                        precond_pos = [expr(f"In({c}, {p})"), expr(f"At({p}, {a})")]
+                        precond_pos = [expr("In({}, {})".format(c, p)), expr("At({}, {})".format(p, a))]
                         precond_neg = []
-                        effect_add = [expr(f"At({c}, {a})")]
-                        effect_rem = [expr(f"In({c}, {p})")]
-                        unload = Action(expr(f"Unload({c}, {p}, {a})"),
+                        effect_add = [expr("At({}, {})".format(c, a))]
+                        effect_rem = [expr("In({}, {})".format(c, p))]
+                        unload = Action(expr("Unload({}, {}, {})".format(c, p, a)),
                                         [precond_pos, precond_neg],
                                         [effect_add, effect_rem])
                         unloads.append(unload)
@@ -190,7 +190,7 @@ class AirCargoProblem(Problem):
         conditions by ignoring the preconditions required for an action to be
         executed.
         """
-        curr_state = decode_state(node.state,self.state_map)
+        curr_state = decode_state(node.state, self.state_map)
 
         remaining_goals = [g for g in self.goal if g not in curr_state.pos]
         count = self.get_nr_count_until_all_goal_states_reached(1, remaining_goals)
@@ -210,7 +210,7 @@ class AirCargoProblem(Problem):
         # remove added fluent from remaining_gaols if executed action reached goal
         [remaining_goals.remove(a) for actions in self.actions_list for a in actions.effect_add if a in remaining_goals]
 
-        return self.get_nr_count_until_all_goal_states_reached(curr_count+1, remaining_goals)
+        return self.get_nr_count_until_all_goal_states_reached(curr_count + 1, remaining_goals)
 
 
 def air_cargo_p1() -> AirCargoProblem:

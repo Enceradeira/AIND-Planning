@@ -2,7 +2,7 @@ from aimacode.planning import Action
 from aimacode.search import Problem
 from aimacode.utils import expr, Expr
 from lp_utils import decode_state
-from itertools import product, combinations
+from itertools import product
 
 
 class PgNode():

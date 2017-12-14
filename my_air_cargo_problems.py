@@ -191,25 +191,31 @@ class AirCargoProblem(Problem):
         executed.
         """
         curr_state = decode_state(node.state, self.state_map)
+        remaining_goals = {g for g in self.goal if g not in curr_state.pos}
 
-        remaining_goals = [g for g in self.goal if g not in curr_state.pos]
-        count = self.get_nr_count_until_all_goal_states_reached(1, remaining_goals)
-        return count
+        return self.get_nr_count_until_all_goal_states_reached(0, remaining_goals)
 
     def get_nr_count_until_all_goal_states_reached(self, curr_count, remaining_goals):
         """
-        Counts how many times the actions, regardless their precondition, needs to be applied
+        Counts how many times the best action, regardless its precondition, needs to be applied
         until all goals have been reached
         :param curr_count: the number of times actions have been applied before this method has been called
         :param remaining_goals: a set of all goals that haven't been reached it
         :return: the number of times all actions had to be applied until all goal states were reached
         """
-        if len(remaining_goals) == 0:
+        if (len(remaining_goals) == 0):
             return curr_count
 
-        # remove added fluent from remaining_gaols if executed action reached goal
-        [remaining_goals.remove(a) for actions in self.actions_list for a in actions.effect_add if a in remaining_goals]
+        # find the best action (which is the one with most goals in its effects)
+        actions_and_goals = \
+            list(map(lambda a: (a, [g for g in remaining_goals if g in a.effect_add]), self.actions_list))
+        max_nr_goals_in_action = max(map(lambda a: len(a[1]), actions_and_goals))
+        best_action = next(filter(lambda a: len(a[1]) == max_nr_goals_in_action, actions_and_goals))
 
+        # remove the goals which are reached by the best action
+        [remaining_goals.remove(a) for a in best_action[1] if a in remaining_goals]
+
+        # call continuation for next best action
         return self.get_nr_count_until_all_goal_states_reached(curr_count + 1, remaining_goals)
 
 

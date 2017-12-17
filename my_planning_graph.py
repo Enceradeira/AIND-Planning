@@ -3,6 +3,7 @@ from aimacode.search import Problem
 from aimacode.utils import expr, Expr
 from lp_utils import decode_state
 
+
 class PgNode():
     """Base class for planning graph nodes.
 
@@ -337,18 +338,20 @@ class PlanningGraph():
 
         action_nodes = self.a_levels[level - 1]
 
-        effect_nodes = dict()
+        # collect all new effect nodes in a dictionary
+        identity_map = dict()
         for action_node in action_nodes:
             for effect_node in action_node.effnodes:
-                effect_nodes[effect_node] = effect_node
+                identity_map[effect_node] = effect_node
 
         for action_node in action_nodes:
             for effect_node in action_node.effnodes:
-                uniq_effect_node = effect_nodes[effect_node]
+                # make sure that the "same" effect nodes are represented by the same object in memory (identity map)
+                uniq_effect_node = identity_map[effect_node]
                 action_node.children.add(uniq_effect_node)
                 uniq_effect_node.parents.add(action_node)
 
-        self.s_levels.append(set(effect_nodes.keys()))
+        self.s_levels.append(set(identity_map.keys()))
 
     def update_a_mutex(self, nodeset):
         """ Determine and update sibling mutual exclusion for A-level nodes
@@ -447,8 +450,8 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         """
-        return self.has_inconsistency(node_a1.prenodes, node_a2.effnodes) or self.has_inconsistency(node_a1.effnodes,
-                                                                                                    node_a2.prenodes)
+        return self.has_inconsistency(node_a1.prenodes, node_a2.effnodes) or \
+               self.has_inconsistency(node_a1.effnodes, node_a2.prenodes)
 
     def competing_needs_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         """
@@ -536,12 +539,6 @@ class PlanningGraph():
                 return False
             all_actions_mutex = all(map(lambda n1: any(map(lambda n2: n1.is_mutex(n2), actions2)), actions1))
             return all_actions_mutex
-
-        # can_achieve_both_states1 = any(map(lambda a: node_s1 in a.children and node_s2 in a.children,actions1))
-        # result1 = all(map(lambda n1: any(map(lambda n2: n1.is_mutex(n2), actions_node_s2)), actions1))
-
-        # can_achieve_both_states2 = any(map(lambda a: node_s1 in a.children and node_s2 in a.children,actions_node_s2))
-        # result2 = all(map(lambda n1: any(map(lambda n2: n1.is_mutex(n2), actions1)), actions_node_s2))
 
         return is_node_inconsistent(node_s1, node_s2) and is_node_inconsistent(node_s2, node_s1)
 
